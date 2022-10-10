@@ -47,10 +47,8 @@ def get_http_resource(url, file_name):
     """
     Get an HTTP resource from a server
            Parse the URL and call function to actually make the request.
-
     :param url: full URL of the resource to get
     :param file_name: name of file in which to store the retrieved resource
-
     (do not modify this function)
     """
 
@@ -84,7 +82,6 @@ def setup_connection(host, port):
     :param str host: host name to connect to
     :param int port: port number for the connection
     :return: TCP socket
-
     (do not modify this function)
     """
 
@@ -104,7 +101,6 @@ def setup_connection(host, port):
 def do_http_exchange(host, port, resource, file_name):
     """
     Get an HTTP resource from a server
-
     :param str host: the ASCII domain name or IP address of the server machine (i.e., host) to connect to
     :param int port: port number to connect to on server host
     :param str resource: the ASCII path/name of resource to get. This is everything in the URL after the domain name,
@@ -124,7 +120,7 @@ def do_http_exchange(host, port, resource, file_name):
 
     header = parse_header(tcp_socket)
     if b'Content-Length' in header:
-        print('fart')
+        parse_body(tcp_socket, False, header[b'Content-Length'])
 
     return 500  # Replace this "server error" with the actual status code
 
@@ -209,6 +205,58 @@ def get_version(data_socket):
     return typ
 
 
+
+
+
+
+
+def parse_chunking(data_socket):
+    chunked_data = b''
+    size = 0
+    data = next_byte(data_socket)
+    while chunked_data != b'\x0d':
+        chunked_data += data
+        data = next_byte(data_socket)
+        size += size
+
+    print(chunked_data)
+    print(size)
+    return chunked_data
+
+
+#    data_length = int.from_bytes(next_byte(data_socket), 'big') + int.from_bytes(next_byte(data_socket), 'big')
+
+    # As long as the body header isn't equal to CRLF, CRLF it will copy down the message size
+#    while data_length > 0:
+ #       body_data += next_byte(data_socket)
+ #       data_length -= data_length
+
+#    for body_size in range(0, int.from_bytes(body_data, 'big')):
+#       body_message += next_byte(data_socket)
+
+
+
+
+
+def read_body(data_socket, size):
+    body_data = b''
+    size = int.from_bytes(size, 'big')
+    for x in range(0, size):
+        body_data += next_byte(data_socket)
+
+    return body_data
+
+def parse_body(data_socket, chunked, size):
+    if chunked:
+        parse_chunking(data_socket)
+    else:
+        read_body(data_socket, size)
+
+
+
+
+
+
 def next_byte(data_socket):
     """
     Read the next byte from the socket data_socket.
@@ -224,6 +272,10 @@ def next_byte(data_socket):
     :return: the next byte, as a bytes object with a single byte in it
     """
     return data_socket.recv(1)
+
+
+# Define additional functions here as necessary
+# Don't forget docstrings and :author: tags
 
 
 main()
