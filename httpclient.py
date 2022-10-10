@@ -35,10 +35,10 @@ def main():
     get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
 
     # this resource request should result in "chunked" data transfer
-    get_http_resource('https://www.httpvshttps.com/','index.html')
+    get_http_resource('https://www.httpvshttps.com/', 'index.html')
 
     # this resource request should result in "chunked" data transfer
-    #get_http_resource('https://www.youtube.com/', 'youtube.html')
+    # get_http_resource('https://www.youtube.com/', 'youtube.html')
 
     # If you find fun examples of chunked or Content-Length pages, please share them with us!
 
@@ -116,15 +116,114 @@ def do_http_exchange(host, port, resource, file_name):
 
     # Setup the TCP connection
     tcp_socket = setup_connection(host, port)
-
+    request = b'GET /check.png HTTP/1.1\x0d\x0a' \
+              b'Host: www.httpvshttps.com\x0d\x0a' \
+              b'\x0d\x0a'
     # Request the resource and write the data to the file
+    tcp_socket.sendall(request)
 
-    # Don't forget to close the tcp_socket when finished
- 
+    header = parse_header(tcp_socket)
+    if b'Content-Length' in header:
+        print('fart')
+
     return 500  # Replace this "server error" with the actual status code
 
-# Define additional functions here as necessary
-# Don't forget docstrings and :author: tags
+
+def parse_header(data_socket):
+    dictionary = read_first_line(data_socket)
+    header = read_header(data_socket, dictionary)
+    return header
+
+
+def read_header(data_socket, header):
+    data = b''
+
+    # Stops when header is done
+    index = 0
+    while data != b'\x0d':
+
+        while data != b'\x0a':
+            # Stops when line is done
+            key = b''
+            value = b''
+            if index == 0:
+                data = next_byte(data_socket)
+            while data != b':':
+                # Get key
+                key += data
+                data = next_byte(data_socket)
+
+            # Read 20 in ascii (space)
+            data = next_byte(data_socket)
+
+            data = next_byte(data_socket)
+            while data != b'\x0d':
+                # Get key
+                value += data
+                data = next_byte(data_socket)
+
+            # Read 0f value to exit loop
+            data = next_byte(data_socket)
+            header[key] = value
+
+        index += 1
+        data = next_byte(data_socket)
+
+    return header
+
+
+def read_first_line(data_socket):
+    line = dict()
+
+    typ = get_version(data_socket)
+    line['version'] = typ
+
+    # get status
+    data = next_byte(data_socket)
+    status = b''
+    while data != b'\x20':
+        status += data
+        data = next_byte(data_socket)
+    line['status'] = status
+
+    # get ok status
+    data = next_byte(data_socket)
+    ok = b''
+    while data != b'\x0d':
+        ok += data
+        data = next_byte(data_socket)
+    line['ok'] = ok
+
+    # read line feed
+    next_byte(data_socket)
+
+    return line
+
+
+def get_version(data_socket):
+    typ = b''
+    data = next_byte(data_socket)
+    while data != b'\x20':
+        typ += data
+        data = next_byte(data_socket)
+    return typ
+
+
+def next_byte(data_socket):
+    """
+    Read the next byte from the socket data_socket.
+
+    Read the next byte from the sender, received over the network.
+    If the byte has not yet arrived, this method blocks (waits)
+      until the byte arrives.
+    If the sender is done sending and is waiting for your response, this method blocks indefinitely.
+
+    :param data_socket: The socket to read from. The data_socket argument should be an open tcp
+                        data connection (either a client socket or a server data socket), not a tcp
+                        server's listening socket.
+    :return: the next byte, as a bytes object with a single byte in it
+    """
+    return data_socket.recv(1)
 
 
 main()
