@@ -32,7 +32,7 @@ def main():
     """
 
     # These resource request should result in "Content-Length" data transfer
-    get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
+    #get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
 
     # this resource request should result in "chunked" data transfer
     get_http_resource('https://www.httpvshttps.com/', 'index.html')
@@ -112,8 +112,10 @@ def do_http_exchange(host, port, resource, file_name):
 
     # Setup the TCP connection
     tcp_socket = setup_connection(host, port)
-    request = b'GET /check.png HTTP/1.1\x0d\x0a' \
-              b'Host: www.httpvshttps.com\x0d\x0a' \
+    resource = resource.encode('ASCII')
+    host = host.encode('ASCII')
+    request = b'GET '+resource + b' HTTP/1.1\x0d\x0a' \
+              b'Host: ' + host + b'\x0d\x0a' \
               b'\x0d\x0a'
     # Request the resource and write the data to the file
     tcp_socket.sendall(request)
@@ -121,6 +123,8 @@ def do_http_exchange(host, port, resource, file_name):
     header = parse_header(tcp_socket)
     if b'Content-Length' in header:
         parse_body(tcp_socket, False, header[b'Content-Length'])
+    else:
+        parse_body(tcp_socket, True, 0)
 
     return 500  # Replace this "server error" with the actual status code
 
@@ -243,6 +247,8 @@ def read_body(data_socket, size):
     size = int.from_bytes(size, 'big')
     for x in range(0, size):
         body_data += next_byte(data_socket)
+        if x == 800000000:
+            print('fart')
 
     return body_data
 
