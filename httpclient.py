@@ -50,13 +50,13 @@ def main():
     """
 
     # These resource request should result in "Content-Length" data transfer
-    #get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
+    get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
 
     # this resource request should result in "chunked" data transfer
-    #get_http_resource('https://www.httpvshttps.com/', 'index.html')
+    # get_http_resource('https://www.httpvshttps.com/', 'index.html')
 
     # this resource request should result in "chunked" data transfer
-    get_http_resource('https://www.youtube.com/', 'youtube.html')
+    # get_http_resource('https://www.youtube.com/', 'youtube.html')
 
     # If you find fun examples of chunked or Content-Length pages, please share them with us!
 
@@ -228,9 +228,17 @@ def get_version(data_socket):
     return typ
 
 
-# When the data is chunked we only take the data socket because
-# there is no content-length for the size
+
 def parse_chunking(data_socket):
+    '''
+     When the data is chunked we only take the data socket because
+     there is no content-length for the size. Here we look to go through
+     a sequence of chunked data by looking at the headers in the body
+     that will find the size of the message and go unitl it reaches
+     two CRLFs (end of message)
+    :param data_socket: socket to receive message data from
+    :return: the chunked message data bytes
+    '''
     # new blank byte object
     chunked_data = b''
     size = b''
@@ -260,25 +268,45 @@ def parse_chunking(data_socket):
         # read next size
         data = next_byte(data_socket)
 
-    #read 0d 0a
+    # read 0d 0a
     data = next_byte(data_socket)
     data = next_byte(data_socket)
 
     return chunked_data
 
 
-# If the message is unchunked it uses the socket and size (from the content length in the header)
+'''
+  If the message is unchunked it uses the socket and size (from the content length in the header)
+'''
+
+
 def read_body(data_socket, size):
+    '''
+    If the message is unchunked it uses the socket
+    and size (from the content length in the header)
+    :param data_socket: socket to receive message data from
+    :param size: the given content-length in the header
+    :return: the unchunked bytes data from the message body
+    '''
+    body_data = b''
     # body data is the data received from the socket that checks each byte from the message body
-    body_data = data_socket.recv(int.from_bytes(size, 'big'))
-    print(body_data)
+    for x in range(int.from_bytes(size, 'big')):
+        body_data += data_socket.recv()
+
     # returns the received data
     return body_data
 
 
-# Checks if the body of message is chunked or not, this will then call the right method
-# based on if the message is chunked or unchunked
+
 def parse_body(data_socket, chunked, size):
+    '''
+    Checks if the body of message is chunked or not, this will then call the right method
+    based on if the message is chunked or unchunked and returns its value
+    :param data_socket: the socket to receive message data from
+    :param chunked: boolean value from the message header
+    :param size: if the message is unchunked it is the content-length from the header
+    :return: the bytes data from the body message
+    '''
     # if the message is chunked
     if chunked:
         return parse_chunking(data_socket)
@@ -287,8 +315,14 @@ def parse_body(data_socket, chunked, size):
         return read_body(data_socket, size)
 
 
-def create_file(message, number):
-    text_file = open(number, "wb")
+def create_file(message, file_name):
+    '''
+    creates a file for the given http link
+    :param message: the bytes data that was parsed
+    :param file_name: the name given to the file
+    :return: the created .html file
+    '''
+    text_file = open(file_name, "wb")
     text_file.write(message)
     text_file.close()
 
