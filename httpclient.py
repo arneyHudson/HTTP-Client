@@ -50,10 +50,10 @@ def main():
     """
 
     # These resource request should result in "Content-Length" data transfer
-    #get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
+    get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
 
     # this resource request should result in "chunked" data transfer
-    #get_http_resource('https://www.httpvshttps.com/', 'index.html')
+    get_http_resource('https://www.httpvshttps.com/', 'index.html')
 
     # this resource request should result in "chunked" data transfer
     get_http_resource('https://www.youtube.com/', 'youtube.html')
@@ -149,12 +149,23 @@ def do_http_exchange(host, port, resource, file_name):
 
 
 def parse_header(data_socket):
+    """
+    Parses the header from the socket
+    :param data_socket: socket where data is coming from
+    :return: dictionary full of header values
+    """
     dictionary = read_first_line(data_socket)
     header = read_header(data_socket, dictionary)
     return header
 
 
 def read_header(data_socket, header):
+    """
+    reads the body of the header
+    :param data_socket: socket where data is coming from
+    :param header: dictionary to store data
+    :return: dictionary full of header values
+    """
     data = b''
 
     # Stops when header is done
@@ -192,6 +203,11 @@ def read_header(data_socket, header):
 
 
 def read_first_line(data_socket):
+    """
+    reads the first line of the header
+    :param data_socket: socket where data is coming from
+    :return: dictonary of first line content
+    """
     line = dict()
 
     typ = get_version(data_socket)
@@ -220,6 +236,11 @@ def read_first_line(data_socket):
 
 
 def get_version(data_socket):
+    """
+    gets the http version of the request
+    :param data_socket: socket where data is coming from
+    :return: the version of http requested
+    """
     typ = b''
     data = next_byte(data_socket)
     while data != b'\x20':
