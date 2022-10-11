@@ -9,12 +9,30 @@
 An HTTP client
 
 Introduction: (Describe the lab in your own words)
-In our lab we look to make a request from the '
+In our lab we look to make a request from a TCP server that we created that will request a message from a given
+http resource. We look to read the incoming header of the message to determine if the message happens to be chunked or
+unchunked and we do so by reading the header until we get b'\0d\x0a' the data before this will be stored as the header
+and can be parsed to determine what type it is. Once that is found it is onto the body where if it is not chunked,
+the content-length is used and just reads until it gets to the end of that length of the message body. If it is chunked
+we have to continue to read the header messages in the body that tell the size of the chunks. These are separated by
+b'\x0d' and stops when we get two consecutive b'\x0d\x0a\x0d\x0a'. Then the final bytes can be saved as a html file that
+can be loaded onto a search engine.
 
 
 
-Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
+Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked,
+and any suggestions you have for improvement)
 This lab was a real mind bender in a few ways when thinking about how to decipher chunked messages.
+We liked creating the socket and reading the header of the message that was sent. From there
+determining if the message was chunked or unchunked was the main focus which was cool to think about.
+Then once we had the message determined if it was chunked or unchunked we could try and decipher the
+bytes contained in the body. This part of the lab was challenging and helped us learn problem-solving skills and
+our understanding of chunked messages while, testing our python programming knowledge. We disliked all the
+loops that had to go into this parse body method which was hard to understand at first along with the creation of the
+dictionary. Of course the final project of loading the file was most satisfying. We are having a hard time coming up
+with suggestions for the lab because we found it very entertaining to test various websites, we might add that the lab
+could be better understood if we went over it more in class.
+
 
 
 
@@ -247,18 +265,6 @@ def parse_chunking(data_socket):
     data = next_byte(data_socket)
 
     return chunked_data
-
-
-
-#    data_length = int.from_bytes(next_byte(data_socket), 'big') + int.from_bytes(next_byte(data_socket), 'big')
-
-# As long as the body header isn't equal to CRLF, CRLF it will copy down the message size
-#    while data_length > 0:
-#       body_data += next_byte(data_socket)
-#       data_length -= data_length
-
-#    for body_size in range(0, int.from_bytes(body_data, 'big')):
-#       body_message += next_byte(data_socket)
 
 
 # If the message is unchunked it uses the socket and size (from the content length in the header)
