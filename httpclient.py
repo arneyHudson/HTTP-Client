@@ -270,8 +270,10 @@ def parse_chunking(data_socket):
 # If the message is unchunked it uses the socket and size (from the content length in the header)
 def read_body(data_socket, size):
     # body data is the data received from the socket that checks each byte from the message body
-    body_data = data_socket.recv(int.from_bytes(size, 'big'))
-    print(body_data)
+    size = int(size.decode('ASCII'))
+    body_data = b''
+    for x in range(0, size):
+        body_data += next_byte(data_socket)
     # returns the received data
     return body_data
 
