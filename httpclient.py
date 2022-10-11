@@ -9,12 +9,12 @@
 An HTTP client
 
 Introduction: (Describe the lab in your own words)
-
+In our lab we look to make a request from the '
 
 
 
 Summary: (Summarize your experience with the lab, what you learned, what you liked,what you disliked, and any suggestions you have for improvement)
-
+This lab was a real mind bender in a few ways when thinking about how to decipher chunked messages.
 
 
 
@@ -32,13 +32,13 @@ def main():
     """
 
     # These resource request should result in "Content-Length" data transfer
-    get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
+    #get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
 
     # this resource request should result in "chunked" data transfer
     #get_http_resource('https://www.httpvshttps.com/', 'index.html')
 
     # this resource request should result in "chunked" data transfer
-    # get_http_resource('https://www.youtube.com/', 'youtube.html')
+    get_http_resource('https://www.youtube.com/', 'youtube.html')
 
     # If you find fun examples of chunked or Content-Length pages, please share them with us!
 
@@ -220,6 +220,7 @@ def parse_chunking(data_socket):
     data = next_byte(data_socket)
     # goes until it reaches b'\x0d\x0a\x0d\x0a'
     while data != b'0':
+        size = b''
         while data != b'\x0d':
             size += data
             data = next_byte(data_socket)
