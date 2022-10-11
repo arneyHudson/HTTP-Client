@@ -32,10 +32,10 @@ def main():
     """
 
     # These resource request should result in "Content-Length" data transfer
-    #get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
+    get_http_resource('https://www.httpvshttps.com/check.png', 'check.png')
 
     # this resource request should result in "chunked" data transfer
-    get_http_resource('https://www.httpvshttps.com/', 'index.html')
+    #get_http_resource('https://www.httpvshttps.com/', 'index.html')
 
     # this resource request should result in "chunked" data transfer
     # get_http_resource('https://www.youtube.com/', 'youtube.html')
@@ -114,17 +114,18 @@ def do_http_exchange(host, port, resource, file_name):
     tcp_socket = setup_connection(host, port)
     resource = resource.encode('ASCII')
     host = host.encode('ASCII')
-    request = b'GET '+resource + b' HTTP/1.1\x0d\x0a' \
-              b'Host: ' + host + b'\x0d\x0a' \
-              b'\x0d\x0a'
+    request = b'GET ' + resource + b' HTTP/1.1\x0d\x0a' \
+                                   b'Host: ' + host + b'\x0d\x0a' \
+                                                      b'\x0d\x0a'
     # Request the resource and write the data to the file
     tcp_socket.sendall(request)
 
     header = parse_header(tcp_socket)
+    next_byte(tcp_socket)
     if b'Content-Length' in header:
-        parse_body(tcp_socket, False, header[b'Content-Length'])
+        create_file(parse_body(tcp_socket, False, header[b'Content-Length']), file_name)
     else:
-        parse_body(tcp_socket, True, 0)
+        create_file(parse_body(tcp_socket, True, 0), file_name)
 
     return 500  # Replace this "server error" with the actual status code
 
@@ -209,58 +210,80 @@ def get_version(data_socket):
     return typ
 
 
-
-
-
-
-
+# When the data is chunked we only take the data socket because
+# there is no content-length for the size
 def parse_chunking(data_socket):
+    # new blank byte object
     chunked_data = b''
-    size = 0
+    size = b''
+    # data that will be compared in the loop to see when the body reaches the end of the message
     data = next_byte(data_socket)
-    while chunked_data != b'\x0d':
-        chunked_data += data
+    # goes until it reaches b'\x0d\x0a\x0d\x0a'
+    while data != b'0':
+        while data != b'\x0d':
+            size += data
+            data = next_byte(data_socket)
+        size = size.decode('ASCII')
+        size = int(size, 16)
+        size = int(size)
+        # read line feed
         data = next_byte(data_socket)
-        size += size
+        print(data)
+        print(size)
+        for x in range(size):
+            # checks the next byte that will be compared to later
+            data = next_byte(data_socket)
+            # adds the data to the blank byte and continues to do so in the loop
+            chunked_data += data
+        # read 0d 0a
+        data = next_byte(data_socket)
+        data = next_byte(data_socket)
+        # read next size
+        data = next_byte(data_socket)
 
-    print(chunked_data)
-    print(size)
+    #read 0d 0a
+    data = next_byte(data_socket)
+    data = next_byte(data_socket)
+
     return chunked_data
+
 
 
 #    data_length = int.from_bytes(next_byte(data_socket), 'big') + int.from_bytes(next_byte(data_socket), 'big')
 
-    # As long as the body header isn't equal to CRLF, CRLF it will copy down the message size
+# As long as the body header isn't equal to CRLF, CRLF it will copy down the message size
 #    while data_length > 0:
- #       body_data += next_byte(data_socket)
- #       data_length -= data_length
+#       body_data += next_byte(data_socket)
+#       data_length -= data_length
 
 #    for body_size in range(0, int.from_bytes(body_data, 'big')):
 #       body_message += next_byte(data_socket)
 
 
-
-
-
+# If the message is unchunked it uses the socket and size (from the content length in the header)
 def read_body(data_socket, size):
-    body_data = b''
-    size = int.from_bytes(size, 'big')
-    for x in range(0, size):
-        body_data += next_byte(data_socket)
-        if x == 800000000:
-            print('fart')
-
+    # body data is the data received from the socket that checks each byte from the message body
+    body_data = data_socket.recv(int.from_bytes(size, 'big'))
+    print(body_data)
+    # returns the received data
     return body_data
 
+
+# Checks if the body of message is chunked or not, this will then call the right method
+# based on if the message is chunked or unchunked
 def parse_body(data_socket, chunked, size):
+    # if the message is chunked
     if chunked:
-        parse_chunking(data_socket)
+        return parse_chunking(data_socket)
     else:
-        read_body(data_socket, size)
+        # if the message is unchunked
+        return read_body(data_socket, size)
 
 
-
-
+def create_file(message, number):
+    text_file = open(number, "wb")
+    text_file.write(message)
+    text_file.close()
 
 
 def next_byte(data_socket):
